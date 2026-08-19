@@ -1,3 +1,4 @@
+
 const getAllSkills = `
   MATCH (s:Skill)
   RETURN s.name AS name
@@ -17,20 +18,45 @@ const getSkillsForJob = `
   ORDER BY s.name
 `;
 
+
+
 const getRelatedSkills = `
-  MATCH (s:Skill)-[:RELATED_TO]->(related:Skill)
-  WHERE s.name = $skill
-  RETURN related.name AS skill
-  ORDER BY related.name
+  MATCH (s:Skill {name: $skill})
+  MATCH (s)-[:RELATED_TO]-(related:Skill)
+
+  RETURN DISTINCT related.name AS skill
+  ORDER BY skill
 `;
+
+
 
 const getRecommendedJobs = `
   MATCH (s:Skill {name: $skill})
-        -[:RELATED_TO*1..2]->
-        (related:Skill)
-        -[:REQUIRED_FOR]->
-        (job:JobRole)
-  RETURN DISTINCT job.name AS jobRole
+
+  OPTIONAL MATCH (s)-[:REQUIRED_FOR]->(directJob:JobRole)
+
+  OPTIONAL MATCH (s)-[:RELATED_TO*1..2]-(related:Skill)
+  OPTIONAL MATCH (related)-[:REQUIRED_FOR]->(relatedJob:JobRole)
+
+  WITH
+    directJob,
+    relatedJob
+
+  UNWIND
+    CASE
+      WHEN directJob IS NOT NULL AND relatedJob IS NOT NULL
+        THEN [directJob.name, relatedJob.name]
+
+      WHEN directJob IS NOT NULL
+        THEN [directJob.name]
+
+      WHEN relatedJob IS NOT NULL
+        THEN [relatedJob.name]
+
+      ELSE []
+    END AS jobRole
+
+  RETURN DISTINCT jobRole
   ORDER BY jobRole
 `;
 

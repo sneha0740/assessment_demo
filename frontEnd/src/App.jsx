@@ -31,7 +31,7 @@ function App() {
     fetchSkills();
   }, []);
 
-  // Explore selected skill
+  
   const handleExplore = async () => {
     if (!selectedSkill) {
       return;
